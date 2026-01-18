@@ -19,8 +19,8 @@ npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit
 - Interactive CLI with beautiful prompts
 - Multiple blockchain support (EVM, Solana)
 - Popular wallet providers pre-configured
-- TypeScript + Next.js 16 (App Router)
-- Tailwind CSS + shadcn/ui components
+- TypeScript + Next.js 14+ (App Router)
+- Tailwind CSS styling
 - Ready-to-use contract/program interaction hooks
 
 ## Supported Wallet Providers
@@ -64,8 +64,13 @@ You'll be prompted to:
 npx create-nextjs-dapp [project-name] [options]
 
 Options:
-  --chain, -c     Blockchain to use (evm, solana)
-  --wallet, -w    Wallet provider (rainbowkit, privy, dynamic, reown, thirdweb, getpara)
+  -c, --chain <chain>      Blockchain to use (evm, solana)
+  -w, --wallet <provider>  Wallet provider to use
+  -y, --yes                Skip prompts and use defaults
+  --git                    Initialize a git repository
+  --install                Install dependencies after creation
+  -h, --help               Show help message
+  -v, --version            Show version number
 ```
 
 ### Examples
@@ -79,6 +84,12 @@ npx create-nextjs-dapp my-solana-app -c solana -w dynamic
 
 # Interactive mode with project name
 npx create-nextjs-dapp my-dapp
+
+# Non-interactive with defaults
+npx create-nextjs-dapp my-dapp --yes
+
+# Create with git and install dependencies
+npx create-nextjs-dapp my-dapp --git --install
 ```
 
 ## After Setup
@@ -114,7 +125,7 @@ my-dapp/
 ├── components/
 │   ├── Header.tsx      # Wallet connect button
 │   ├── Greeting.tsx    # Contract interaction example
-│   └── ui/             # shadcn/ui components
+│   └── ThemeToggle.tsx # Dark/light mode toggle
 ├── hooks/
 │   └── useGreeting.ts  # Contract hook example
 ├── abi/

@@ -52,6 +52,20 @@ describe("CLI", () => {
 
     assert.ok(output.includes("create-nextjs-dapp v"), "Should show version");
   });
+
+  test("--help shows --git flag", () => {
+    const output = execSync(`node ${CLI_PATH} --help`, { encoding: "utf-8" });
+
+    assert.ok(output.includes("--git"), "Should show --git option");
+    assert.ok(output.includes("Initialize a git repository"), "Should describe --git");
+  });
+
+  test("--help shows --install flag", () => {
+    const output = execSync(`node ${CLI_PATH} --help`, { encoding: "utf-8" });
+
+    assert.ok(output.includes("--install"), "Should show --install option");
+    assert.ok(output.includes("Install dependencies"), "Should describe --install");
+  });
 });
 
 describe("Error Handling", () => {
@@ -281,9 +295,11 @@ describe("Project Generation (Integration)", () => {
       );
     }
 
-    // Verify package.json has correct name and dependencies
+    // Verify package.json has correct name, description, and dependencies
     const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
     assert.strictEqual(pkg.name, projectName, "Package name should match project name");
+    assert.ok(pkg.description.includes("Ethereum"), "Description should mention Ethereum for EVM");
+    assert.ok(pkg.description.includes("RainbowKit"), "Description should mention wallet provider");
     assert.ok(pkg.dependencies["@rainbow-me/rainbowkit"], "Should have rainbowkit dependency");
     assert.ok(pkg.dependencies["wagmi"], "Should have wagmi dependency");
     assert.ok(pkg.dependencies["viem"], "Should have viem dependency");
@@ -323,6 +339,8 @@ describe("Project Generation (Integration)", () => {
 
     const pkg = JSON.parse(readFileSync(join(solanaProjectPath, "package.json"), "utf-8"));
     assert.strictEqual(pkg.name, solanaProjectName, "Package name should match");
+    assert.ok(pkg.description.includes("Solana"), "Description should mention Solana");
+    assert.ok(pkg.description.includes("Dynamic"), "Description should mention wallet provider");
     assert.ok(pkg.dependencies["@solana/web3.js"], "Should have solana web3 dependency");
     assert.ok(pkg.dependencies["@dynamic-labs/solana"], "Should have dynamic solana dependency");
 
