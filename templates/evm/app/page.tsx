@@ -1,20 +1,23 @@
+import { Greeting } from "@/components/Greeting";
+
 const Home = () => {
   return (
     <main className="min-h-[calc(100vh-65px)] flex flex-col">
       <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-12 md:py-16">
         <div className="mb-8 md:mb-12">
           <h1 className="text-xl md:text-2xl font-medium text-foreground mb-2">
-            web3 starter
+            greeting contract
           </h1>
           <p className="text-sm text-muted-foreground">
-            connect your wallet to get started
+            read and write to an on-chain greeting message
           </p>
         </div>
+        <Greeting />
       </div>
 
       <footer className="border-t border-border py-6">
         <div className="max-w-4xl mx-auto px-6 flex items-center justify-between text-xs text-muted-foreground">
-          <span>built with next.js</span>
+          <span>built with next.js + wagmi + rainbowkit</span>
           <a
             href="https://github.com/0xmihirsahu/create-nextjs-dapp"
             target="_blank"
