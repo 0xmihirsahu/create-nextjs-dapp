@@ -12,11 +12,28 @@ import {
 } from "fs";
 import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
+import updateNotifier from "update-notifier";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const VERSION = "0.1.0";
+// Read package.json for version and update notifier
+function getPackageJson(): { name: string; version: string } {
+  try {
+    const pkgPath = join(__dirname, "..", "package.json");
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    return { name: pkg.name || "create-nextjs-dapp", version: pkg.version || "0.0.0" };
+  } catch {
+    return { name: "create-nextjs-dapp", version: "0.0.0" };
+  }
+}
+
+const pkg = getPackageJson();
+const VERSION = pkg.version;
+
+// Check for updates (non-blocking, cached for 1 day)
+const notifier = updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 24 });
 
 function showHelp(): void {
   console.log(`
@@ -31,6 +48,8 @@ ${pc.bold("Options:")}
   ${pc.cyan("-c, --chain <chain>")}     Blockchain to use (evm, solana)
   ${pc.cyan("-w, --wallet <provider>")} Wallet provider to use
   ${pc.cyan("-y, --yes")}               Skip prompts and use defaults
+  ${pc.cyan("--git")}                   Initialize a git repository
+  ${pc.cyan("--install")}               Install dependencies after creation
   ${pc.cyan("-h, --help")}              Show this help message
   ${pc.cyan("-v, --version")}           Show version number
 
@@ -65,6 +84,9 @@ ${pc.bold("Examples:")}
   ${pc.dim("# Non-interactive with defaults")}
   ${pc.cyan("npx create-nextjs-dapp my-dapp --yes")}
 
+  ${pc.dim("# Create with git and install dependencies")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp --git --install")}
+
 ${pc.bold("Learn more:")}
   ${pc.dim("GitHub:")} ${pc.cyan("https://github.com/0xmihirsahu/create-nextjs-dapp")}
 `);
@@ -88,6 +110,8 @@ interface CLIOptions {
   chain?: Chain;
   wallet?: WalletProvider;
   yes?: boolean;
+  git?: boolean;
+  install?: boolean;
 }
 
 interface ProviderInfo {
@@ -209,6 +233,10 @@ function parseArgs(): CLIOptions {
       options.chain = value as Chain;
     } else if (arg === "--yes" || arg === "-y") {
       options.yes = true;
+    } else if (arg === "--git") {
+      options.git = true;
+    } else if (arg === "--install") {
+      options.install = true;
     } else if (arg.startsWith("-")) {
       exitWithError(`Unknown option "${arg}".`);
     } else if (!options.projectName) {
@@ -261,6 +289,13 @@ function updatePackageJson(
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
   pkg.name = projectName;
+
+  // Update description based on chain
+  if (chain === "evm") {
+    pkg.description = "A Next.js dApp built on Ethereum with " + WALLET_PROVIDERS[wallet].name;
+  } else if (chain === "solana") {
+    pkg.description = "A Next.js dApp built on Solana with " + WALLET_PROVIDERS[wallet].name;
+  }
 
   // Remove all wallet-specific dependencies first
   const walletDeps = [
@@ -650,6 +685,35 @@ async function main() {
     updateEnvExample(projectPath, chain, wallet);
 
     s.stop(pc.green("✓") + " Project created!");
+
+    // Initialize git repository if requested
+    if (cliOptions.git) {
+      const gitSpinner = p.spinner();
+      gitSpinner.start(pc.cyan("◌") + " Initializing git repository...");
+      try {
+        execSync("git init", { cwd: projectPath, stdio: "pipe" });
+        execSync("git add -A", { cwd: projectPath, stdio: "pipe" });
+        execSync('git commit -m "Initial commit from create-nextjs-dapp"', {
+          cwd: projectPath,
+          stdio: "pipe",
+        });
+        gitSpinner.stop(pc.green("✓") + " Git repository initialized!");
+      } catch {
+        gitSpinner.stop(pc.yellow("⚠") + " Git initialization failed (git may not be installed)");
+      }
+    }
+
+    // Install dependencies if requested
+    if (cliOptions.install) {
+      const installSpinner = p.spinner();
+      installSpinner.start(pc.cyan("◌") + " Installing dependencies...");
+      try {
+        execSync("npm install", { cwd: projectPath, stdio: "pipe" });
+        installSpinner.stop(pc.green("✓") + " Dependencies installed!");
+      } catch {
+        installSpinner.stop(pc.yellow("⚠") + " Failed to install dependencies");
+      }
+    }
   } catch (err) {
     s.stop(pc.red("✗") + " Failed to create project");
 
@@ -698,12 +762,12 @@ async function main() {
   console.log();
   console.log(pc.dim("  ────────────────────────────────────────"));
 
-  // Next steps with styled box
-  const nextSteps = [
-    `${pc.cyan("cd")} ${projectName}`,
-    `${pc.cyan("npm")} install`,
-    `${pc.cyan("npm")} run dev`,
-  ];
+  // Next steps with styled box (dynamic based on what was done)
+  const nextSteps: string[] = [`${pc.cyan("cd")} ${projectName}`];
+  if (!cliOptions.install) {
+    nextSteps.push(`${pc.cyan("npm")} install`);
+  }
+  nextSteps.push(`${pc.cyan("npm")} run dev`);
 
   console.log();
   console.log(`  ${pc.bold(pc.white("Next steps:"))}`);
@@ -717,6 +781,12 @@ async function main() {
     pc.bold(pc.green("✨ Happy building!")) +
       pc.dim(" — Star us on GitHub: github.com/0xmihirsahu/create-nextjs-dapp")
   );
+
+  // Show update notification if available (after all output)
+  notifier.notify({
+    isGlobal: true,
+    message: `Update available: ${pc.dim("{currentVersion}")} → ${pc.green("{latestVersion}")}\nRun ${pc.cyan("npm i -g create-nextjs-dapp")} to update`,
+  });
 }
 
 main().catch((err) => {
