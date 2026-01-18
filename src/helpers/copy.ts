@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, readdirSync, existsSync } from "fs";
+import { cpSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 
 export function copyDir(

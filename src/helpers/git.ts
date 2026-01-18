@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { rmSync } from "fs";
 
 function isInGitRepository(): boolean {
   try {
@@ -54,7 +55,6 @@ export function tryGitInit(root: string): boolean {
   } catch {
     if (didInit) {
       try {
-        const { rmSync } = require("fs");
         rmSync(`${root}/.git`, { recursive: true, force: true });
       } catch {
         // Ignore cleanup errors

@@ -1,5 +1,4 @@
-import { readdirSync, lstatSync } from "fs";
-import { join } from "path";
+import { readdirSync } from "fs";
 
 // Files that are allowed to exist in the target directory
 const VALID_FILES = [
@@ -25,7 +24,7 @@ const VALID_FILES = [
   "bun.lockb",
 ];
 
-export function isFolderEmpty(root: string, name: string): boolean {
+export function isFolderEmpty(root: string, _name: string): boolean {
   const validFiles = VALID_FILES;
 
   const conflicts = readdirSync(root).filter(
