@@ -5,13 +5,11 @@ import { useActiveAccount, useReadContract, useSendTransaction } from "thirdweb/
 import { getContract, prepareContractCall } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { client } from "../lib/client";
-import abi from "../abi/greeter.json";
 
 const contract = getContract({
   client,
   chain: sepolia,
   address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
-  abi: abi as never,
 });
 
 const useGreeting = ({

@@ -29,7 +29,13 @@ const BUILD_TIMEOUT = 300000;
 
 function cleanup() {
   if (existsSync(TEST_DIR)) {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+    rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  }
+}
+
+function cleanupProject(projectPath) {
+  if (existsSync(projectPath)) {
+    rmSync(projectPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 }
 
@@ -140,7 +146,7 @@ describe("Build Validation", { timeout: BUILD_TIMEOUT * 3 }, () => {
     assert.ok(pkg.dependencies["@rainbow-me/rainbowkit"], "Should have rainbowkit");
     assert.ok(pkg.dependencies["wagmi"], "Should have wagmi");
 
-    rmSync(projectPath, { recursive: true, force: true });
+    cleanupProject(projectPath);
   });
 
   test("EVM + Thirdweb builds successfully", { timeout: BUILD_TIMEOUT }, () => {
@@ -150,7 +156,7 @@ describe("Build Validation", { timeout: BUILD_TIMEOUT * 3 }, () => {
     const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
     assert.ok(pkg.dependencies["thirdweb"], "Should have thirdweb");
 
-    rmSync(projectPath, { recursive: true, force: true });
+    cleanupProject(projectPath);
   });
 
   test("Solana + wallet-adapter builds successfully", { timeout: BUILD_TIMEOUT }, () => {
@@ -161,7 +167,7 @@ describe("Build Validation", { timeout: BUILD_TIMEOUT * 3 }, () => {
     assert.ok(pkg.dependencies["@solana/web3.js"], "Should have solana web3");
     assert.ok(pkg.dependencies["@solana/wallet-adapter-react"], "Should have wallet adapter react");
 
-    rmSync(projectPath, { recursive: true, force: true });
+    cleanupProject(projectPath);
   });
 });
 
@@ -216,6 +222,6 @@ describe("Lint Validation", { timeout: BUILD_TIMEOUT * 2 }, () => {
       console.log(`  Lint passed with warnings`);
     }
 
-    rmSync(projectPath, { recursive: true, force: true });
+    cleanupProject(projectPath);
   });
 });
