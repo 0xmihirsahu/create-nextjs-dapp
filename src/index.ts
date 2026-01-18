@@ -56,6 +56,7 @@ ${pc.bold("Options:")}
 ${pc.bold("Wallet Providers:")}
   ${pc.bold("EVM:")}
     ${pc.cyan("rainbowkit")}  Best UX for connecting wallets ${pc.dim("(recommended)")}
+    ${pc.cyan("connectkit")}  Beautiful, customizable wallet connection UI
     ${pc.cyan("privy")}       Email, social, and wallet login with embedded wallets
     ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets and onramps
     ${pc.cyan("reown")}       WalletConnect's official SDK (formerly Web3Modal)
@@ -63,10 +64,11 @@ ${pc.bold("Wallet Providers:")}
     ${pc.cyan("getpara")}     Embedded wallets with MPC key management
 
   ${pc.bold("Solana:")}
-    ${pc.cyan("privy")}       Email, social, and wallet login
-    ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets
-    ${pc.cyan("reown")}       WalletConnect's official SDK
-    ${pc.cyan("thirdweb")}    Full-stack web3 development platform
+    ${pc.cyan("wallet-adapter")}  Standard Solana wallet connection ${pc.dim("(recommended)")}
+    ${pc.cyan("privy")}           Email, social, and wallet login
+    ${pc.cyan("dynamic")}         Multi-chain auth with embedded wallets
+    ${pc.cyan("reown")}           WalletConnect's official SDK
+    ${pc.cyan("thirdweb")}        Full-stack web3 development platform
 
 ${pc.bold("Examples:")}
   ${pc.dim("# Interactive mode")}
@@ -99,11 +101,13 @@ function showVersion(): void {
 type Chain = "evm" | "solana";
 type WalletProvider =
   | "rainbowkit"
+  | "connectkit"
   | "privy"
   | "dynamic"
   | "reown"
   | "thirdweb"
-  | "getpara";
+  | "getpara"
+  | "wallet-adapter";
 
 interface CLIOptions {
   projectName?: string;
@@ -124,6 +128,11 @@ const WALLET_PROVIDERS: Record<WalletProvider, ProviderInfo> = {
   rainbowkit: {
     name: "RainbowKit",
     description: "Best UX for connecting wallets (recommended)",
+    chains: ["evm"],
+  },
+  connectkit: {
+    name: "ConnectKit",
+    description: "Beautiful, customizable wallet connection UI",
     chains: ["evm"],
   },
   privy: {
@@ -150,6 +159,11 @@ const WALLET_PROVIDERS: Record<WalletProvider, ProviderInfo> = {
     name: "GetPara (Capsule)",
     description: "Embedded wallets with MPC key management",
     chains: ["evm"],
+  },
+  "wallet-adapter": {
+    name: "Solana Wallet Adapter",
+    description: "Standard Solana wallet connection (recommended)",
+    chains: ["solana"],
   },
 };
 
@@ -310,6 +324,7 @@ function updatePackageJson(
     "@reown/appkit-adapter-wagmi",
     "thirdweb",
     "@getpara/react-sdk",
+    "connectkit",
     "wagmi",
     "viem",
     // Solana
@@ -342,6 +357,9 @@ function updatePackageJson(
       case "rainbowkit":
         pkg.dependencies["@rainbow-me/rainbowkit"] = "^2.2.10";
         break;
+      case "connectkit":
+        pkg.dependencies["connectkit"] = "^1.8.2";
+        break;
       case "privy":
         pkg.dependencies["@privy-io/react-auth"] = "^2.4.1";
         pkg.dependencies["@privy-io/wagmi"] = "^1.0.2";
@@ -364,6 +382,10 @@ function updatePackageJson(
     }
   } else if (chain === "solana") {
     switch (wallet) {
+      case "wallet-adapter":
+        // Standard Solana Wallet Adapter - no additional dependencies needed
+        // Base Solana dependencies are already added above
+        break;
       case "privy":
         pkg.dependencies["@privy-io/react-auth"] = "^2.4.1";
         break;
@@ -406,6 +428,7 @@ function updateEnvExample(
 
   switch (wallet) {
     case "rainbowkit":
+    case "connectkit":
       envContent = `# WalletConnect Project ID
 # 1. Go to https://cloud.walletconnect.com
 # 2. Sign up or log in
@@ -415,6 +438,15 @@ NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
 
 ${chainComment}
 # Your deployed smart contract address
+${addressVar}
+`;
+      break;
+    case "wallet-adapter":
+      envContent = `# Solana Configuration
+# No API key required for standard wallet adapter
+
+${chainComment}
+# Your deployed program address
 ${addressVar}
 `;
       break;
