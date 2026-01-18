@@ -16,6 +16,64 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const VERSION = "0.1.0";
+
+function showHelp(): void {
+  console.log(`
+${pc.bold(pc.cyan("create-nextjs-dapp"))} ${pc.dim(`v${VERSION}`)}
+
+Create a Next.js dApp with your preferred wallet provider.
+
+${pc.bold("Usage:")}
+  ${pc.cyan("npx create-nextjs-dapp")} ${pc.dim("[project-name] [options]")}
+
+${pc.bold("Options:")}
+  ${pc.cyan("-c, --chain <chain>")}     Blockchain to use (evm, solana)
+  ${pc.cyan("-w, --wallet <provider>")} Wallet provider to use
+  ${pc.cyan("-y, --yes")}               Skip prompts and use defaults
+  ${pc.cyan("-h, --help")}              Show this help message
+  ${pc.cyan("-v, --version")}           Show version number
+
+${pc.bold("Wallet Providers:")}
+  ${pc.bold("EVM:")}
+    ${pc.cyan("rainbowkit")}  Best UX for connecting wallets ${pc.dim("(recommended)")}
+    ${pc.cyan("privy")}       Email, social, and wallet login with embedded wallets
+    ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets and onramps
+    ${pc.cyan("reown")}       WalletConnect's official SDK (formerly Web3Modal)
+    ${pc.cyan("thirdweb")}    Full-stack web3 development platform
+    ${pc.cyan("getpara")}     Embedded wallets with MPC key management
+
+  ${pc.bold("Solana:")}
+    ${pc.cyan("privy")}       Email, social, and wallet login
+    ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets
+    ${pc.cyan("reown")}       WalletConnect's official SDK
+    ${pc.cyan("thirdweb")}    Full-stack web3 development platform
+
+${pc.bold("Examples:")}
+  ${pc.dim("# Interactive mode")}
+  ${pc.cyan("npx create-nextjs-dapp")}
+
+  ${pc.dim("# Create with project name")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp")}
+
+  ${pc.dim("# Create with all options")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit")}
+
+  ${pc.dim("# Solana project")}
+  ${pc.cyan("npx create-nextjs-dapp my-solana-app -c solana -w dynamic")}
+
+  ${pc.dim("# Non-interactive with defaults")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp --yes")}
+
+${pc.bold("Learn more:")}
+  ${pc.dim("GitHub:")} ${pc.cyan("https://github.com/0xmihirsahu/create-nextjs-dapp")}
+`);
+}
+
+function showVersion(): void {
+  console.log(`create-nextjs-dapp v${VERSION}`);
+}
+
 type Chain = "evm" | "solana";
 type WalletProvider =
   | "rainbowkit"
@@ -29,6 +87,7 @@ interface CLIOptions {
   projectName?: string;
   chain?: Chain;
   wallet?: WalletProvider;
+  yes?: boolean;
 }
 
 interface ProviderInfo {
@@ -88,6 +147,16 @@ function parseArgs(): CLIOptions {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
+    if (arg === "--help" || arg === "-h") {
+      showHelp();
+      process.exit(0);
+    }
+
+    if (arg === "--version" || arg === "-v") {
+      showVersion();
+      process.exit(0);
+    }
+
     if (arg === "--wallet" || arg === "-w") {
       const value = args[++i]?.toLowerCase() as WalletProvider;
       if (value && Object.keys(WALLET_PROVIDERS).includes(value)) {
@@ -108,6 +177,8 @@ function parseArgs(): CLIOptions {
       if (value && Object.keys(CHAINS).includes(value)) {
         options.chain = value;
       }
+    } else if (arg === "--yes" || arg === "-y") {
+      options.yes = true;
     } else if (!arg.startsWith("-") && !options.projectName) {
       options.projectName = arg;
     }
@@ -352,49 +423,59 @@ async function main() {
 
   const cliOptions = parseArgs();
 
+  const useDefaults = cliOptions.yes;
+
   // Project name
   let projectName = cliOptions.projectName;
   if (!projectName) {
-    const result = await p.text({
-      message: "What is your project named?",
-      placeholder: "my-dapp",
-      defaultValue: "my-dapp",
-      validate: (value) => {
-        if (!value) return "Project name is required";
-        if (!/^[a-z0-9-]+$/.test(value)) {
-          return "Project name can only contain lowercase letters, numbers, and hyphens";
-        }
-        return undefined;
-      },
-    });
+    if (useDefaults) {
+      projectName = "my-dapp";
+    } else {
+      const result = await p.text({
+        message: "What is your project named?",
+        placeholder: "my-dapp",
+        defaultValue: "my-dapp",
+        validate: (value) => {
+          if (!value) return "Project name is required";
+          if (!/^[a-z0-9-]+$/.test(value)) {
+            return "Project name can only contain lowercase letters, numbers, and hyphens";
+          }
+          return undefined;
+        },
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      projectName = result;
     }
-
-    projectName = result;
   }
 
   // Chain selection
   let chain = cliOptions.chain;
   if (!chain) {
-    const result = await p.select({
-      message: "Which blockchain do you want to build on?",
-      options: Object.entries(CHAINS).map(([value, { name, description }]) => ({
-        value: value as Chain,
-        label: name,
-        hint: description,
-      })),
-      initialValue: "evm" as Chain,
-    });
+    if (useDefaults) {
+      chain = "evm";
+    } else {
+      const result = await p.select({
+        message: "Which blockchain do you want to build on?",
+        options: Object.entries(CHAINS).map(([value, { name, description }]) => ({
+          value: value as Chain,
+          label: name,
+          hint: description,
+        })),
+        initialValue: "evm" as Chain,
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      chain = result;
     }
-
-    chain = result;
   }
 
   // Get available providers for selected chain
@@ -412,22 +493,26 @@ async function main() {
   }
 
   if (!wallet) {
-    const result = await p.select({
-      message: "Which wallet provider do you want to use?",
-      options: availableProviders.map((key) => ({
-        value: key,
-        label: WALLET_PROVIDERS[key].name,
-        hint: WALLET_PROVIDERS[key].description,
-      })),
-      initialValue: availableProviders[0],
-    });
+    if (useDefaults) {
+      wallet = availableProviders[0];
+    } else {
+      const result = await p.select({
+        message: "Which wallet provider do you want to use?",
+        options: availableProviders.map((key) => ({
+          value: key,
+          label: WALLET_PROVIDERS[key].name,
+          hint: WALLET_PROVIDERS[key].description,
+        })),
+        initialValue: availableProviders[0],
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      wallet = result;
     }
-
-    wallet = result;
   }
 
   const projectPath = resolve(process.cwd(), projectName);
@@ -510,7 +595,7 @@ async function main() {
 
   p.outro(
     pc.bold(pc.green("✨ Happy building!")) +
-      pc.dim(" — Star us on GitHub: github.com/0xmihirsahu/web3-ui-starter-pack")
+      pc.dim(" — Star us on GitHub: github.com/0xmihirsahu/create-nextjs-dapp")
   );
 }
 

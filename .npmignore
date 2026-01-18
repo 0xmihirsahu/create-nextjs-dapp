@@ -1,0 +1,26 @@
+# Source files (we only publish compiled dist)
+src/
+
+# Config files
+tsconfig.json
+.eslintrc*
+.prettierrc*
+
+# Development
+.github/
+.vscode/
+.idea/
+
+# Tests
+test/
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+
+# Misc
+.DS_Store
+*.log
+.env*
+!templates/**/.env.example
