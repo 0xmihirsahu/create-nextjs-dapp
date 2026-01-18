@@ -10,6 +10,9 @@
     "build": "tsup src/index.ts src/helpers/index.ts --format esm --dts",
     "dev": "tsup src/index.ts --format esm --watch",
     "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
     "test": "node --test test/cli.test.js test/helpers.test.js",
     "test:all": "node --test test/*.test.js",
     "test:build": "node --test test/build.test.js",
@@ -45,11 +48,14 @@
     "validate-npm-package-name": "^7.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
     "@types/node": "^22.10.0",
     "@types/update-notifier": "^6.0.8",
     "@types/validate-npm-package-name": "^4.0.2",
+    "eslint": "^9.18.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.20.0"
   },
   "engines": {
     "node": ">=18"

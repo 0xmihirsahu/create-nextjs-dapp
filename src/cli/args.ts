@@ -1,4 +1,4 @@
-import { validateNpmName, type PackageManager } from "../helpers";
+import { validateNpmName } from "../helpers";
 import type { Chain, WalletProvider, CLIOptions } from "../types";
 import { CHAINS, WALLET_PROVIDERS } from "../config";
 import { exitWithError, showHelp, showVersion } from "./output";
