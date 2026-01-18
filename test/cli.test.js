@@ -54,6 +54,73 @@ describe("CLI", () => {
   });
 });
 
+describe("Error Handling", () => {
+  test("shows error for invalid chain", () => {
+    try {
+      execSync(`node ${CLI_PATH} --chain invalid`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Invalid chain"), "Should show invalid chain error");
+      assert.ok(err.stderr.includes("evm, solana"), "Should list valid chains");
+    }
+  });
+
+  test("shows error for invalid wallet provider", () => {
+    try {
+      execSync(`node ${CLI_PATH} --wallet invalid`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Invalid wallet provider"), "Should show invalid wallet error");
+      assert.ok(err.stderr.includes("rainbowkit"), "Should list valid wallets");
+    }
+  });
+
+  test("shows error for unknown flag", () => {
+    try {
+      execSync(`node ${CLI_PATH} --unknown-flag`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Unknown option"), "Should show unknown option error");
+    }
+  });
+
+  test("shows error for invalid project name", () => {
+    try {
+      execSync(`node ${CLI_PATH} "Invalid_Name!"`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Invalid project name"), "Should show invalid name error");
+    }
+  });
+
+  test("shows error for incompatible wallet/chain combo in non-interactive mode", () => {
+    try {
+      execSync(`node ${CLI_PATH} test-app --chain solana --wallet rainbowkit --yes`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(
+        err.stdout.includes("doesn't support") || err.stderr.includes("doesn't support"),
+        "Should show incompatibility error"
+      );
+    }
+  });
+});
+
 describe("Template Generation", () => {
   test("templates directory exists", () => {
     const templatesDir = join(__dirname, "..", "templates");
