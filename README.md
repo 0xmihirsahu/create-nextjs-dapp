@@ -1,6 +1,6 @@
 # create-nextjs-dapp
 
-A CLI tool to scaffold Next.js dApps with your preferred wallet provider and blockchain.
+A CLI tool to scaffold Next.js dApps with your preferred wallet provider and blockchain. Inspired by [create-next-app](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Quick Start
 
@@ -22,6 +22,8 @@ npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit
 - TypeScript + Next.js 14+ (App Router)
 - Tailwind CSS styling
 - Ready-to-use contract/program interaction hooks
+- Package manager detection (npm, yarn, pnpm, bun)
+- Automatic update notifications
 
 ## Supported Wallet Providers
 
@@ -71,6 +73,10 @@ Options:
   -y, --yes                Skip prompts and use defaults
   --git                    Initialize a git repository
   --install                Install dependencies after creation
+  --use-npm                Use npm as the package manager
+  --use-yarn               Use yarn as the package manager
+  --use-pnpm               Use pnpm as the package manager
+  --use-bun                Use bun as the package manager
   -h, --help               Show help message
   -v, --version            Show version number
 ```
@@ -92,6 +98,11 @@ npx create-nextjs-dapp my-dapp --yes
 
 # Create with git and install dependencies
 npx create-nextjs-dapp my-dapp --git --install
+
+# Use a specific package manager
+yarn create nextjs-dapp my-dapp --use-yarn
+pnpm create nextjs-dapp my-dapp --use-pnpm
+bunx create-nextjs-dapp my-dapp --use-bun
 ```
 
 ## After Setup
@@ -101,9 +112,9 @@ npx create-nextjs-dapp my-dapp --git --install
    cd my-dapp
    ```
 
-2. Install dependencies:
+2. Install dependencies (if you didn't use `--install`):
    ```bash
-   npm install
+   npm install    # or yarn, pnpm, bun
    ```
 
 3. Copy `.env.example` to `.env.local` and add your API keys:
@@ -113,7 +124,7 @@ npx create-nextjs-dapp my-dapp --git --install
 
 4. Start the development server:
    ```bash
-   npm run dev
+   npm run dev    # or yarn dev, pnpm dev, bun dev
    ```
 
 ## Project Structure
@@ -135,6 +146,20 @@ my-dapp/
 └── lib/
     └── utils.ts        # Utility functions
 ```
+
+## Package Manager Detection
+
+The CLI automatically detects which package manager you're using:
+
+```bash
+# These will auto-detect the package manager
+npx create-nextjs-dapp my-dapp      # Uses npm
+yarn create nextjs-dapp my-dapp     # Uses yarn
+pnpm create nextjs-dapp my-dapp     # Uses pnpm
+bunx create-nextjs-dapp my-dapp     # Uses bun
+```
+
+You can override the detected package manager with `--use-npm`, `--use-yarn`, `--use-pnpm`, or `--use-bun`.
 
 ## Contributing
 
