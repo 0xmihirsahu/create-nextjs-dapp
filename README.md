@@ -29,7 +29,8 @@ npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit
 
 | Provider | Description |
 |----------|-------------|
-| [RainbowKit](https://rainbowkit.com) | Best UX for connecting wallets |
+| [RainbowKit](https://rainbowkit.com) | Best UX for connecting wallets (recommended) |
+| [ConnectKit](https://docs.family.co/connectkit) | Beautiful, customizable wallet connection UI |
 | [Privy](https://privy.io) | Email, social, and wallet login with embedded wallets |
 | [Dynamic](https://dynamic.xyz) | Multi-chain auth with embedded wallets and onramps |
 | [Reown](https://reown.com) | WalletConnect's official SDK (formerly Web3Modal) |
@@ -40,6 +41,7 @@ npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit
 
 | Provider | Description |
 |----------|-------------|
+| [Solana Wallet Adapter](https://github.com/solana-labs/wallet-adapter) | Standard Solana wallet connection (recommended) |
 | [Privy](https://privy.io) | Email, social, and wallet login |
 | [Dynamic](https://dynamic.xyz) | Multi-chain auth with embedded wallets |
 | [Reown](https://reown.com) | WalletConnect for Solana |

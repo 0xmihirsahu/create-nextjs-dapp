@@ -154,6 +154,7 @@ describe("Template Generation", () => {
     const evmDir = join(__dirname, "..", "templates", "evm");
     const wallets = [
       "rainbowkit",
+      "connectkit",
       "privy",
       "dynamic",
       "reown",
@@ -172,7 +173,7 @@ describe("Template Generation", () => {
 
   test("Solana wallet templates exist", () => {
     const solanaDir = join(__dirname, "..", "templates", "solana");
-    const wallets = ["privy", "dynamic", "reown", "thirdweb"];
+    const wallets = ["wallet-adapter", "privy", "dynamic", "reown", "thirdweb"];
 
     for (const wallet of wallets) {
       const walletDir = join(solanaDir, wallet);
