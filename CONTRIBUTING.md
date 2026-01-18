@@ -1,110 +1,287 @@
 # Contributing to create-nextjs-dapp
 
-Thanks for your interest in contributing! This document outlines how to contribute to this project.
+Thank you for your interest in contributing to create-nextjs-dapp! This document provides guidelines and instructions for contributing.
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [Development Setup](#development-setup)
+- [Project Architecture](#project-architecture)
+- [Adding a New Wallet Provider](#adding-a-new-wallet-provider)
+- [Testing](#testing)
+- [Pull Request Process](#pull-request-process)
+- [Commit Guidelines](#commit-guidelines)
+
+## Code of Conduct
+
+This project follows a standard code of conduct. Please be respectful and inclusive in all interactions. We're building something useful together.
 
 ## Getting Started
 
-1. Fork the repository
+### Prerequisites
+
+- Node.js 18+
+- npm, yarn, pnpm, or bun
+
+### Fork and Clone
+
+1. Fork the repository on GitHub
 2. Clone your fork:
    ```bash
    git clone https://github.com/YOUR_USERNAME/create-nextjs-dapp.git
    cd create-nextjs-dapp
    ```
-3. Install dependencies:
+3. Add the upstream remote:
    ```bash
-   npm install
-   ```
-4. Create a branch for your changes:
-   ```bash
-   git checkout -b feature/your-feature-name
+   git remote add upstream https://github.com/0xmihirsahu/create-nextjs-dapp.git
    ```
 
-## Development
+## Development Setup
 
-### Building
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Build
 
 ```bash
 npm run build
 ```
 
-### Testing locally
+### Run Locally
 
 ```bash
-npm run build
+# Direct execution
 node dist/index.js
-```
 
-Or use npm link for global testing:
-
-```bash
+# Or link globally for testing
 npm link
 create-nextjs-dapp
 ```
 
-### Project Structure
+### Run Tests
+
+```bash
+npm test
+```
+
+## Project Architecture
 
 ```
 create-nextjs-dapp/
 ├── src/
-│   └── index.ts          # CLI entry point
+│   ├── index.ts              # CLI entry point and main logic
+│   └── helpers/              # Modular helper functions
+│       ├── index.ts          # Barrel export
+│       ├── get-pkg-manager.ts    # Package manager detection
+│       ├── validate-pkg.ts       # Project name validation
+│       ├── is-folder-empty.ts    # Directory conflict detection
+│       ├── is-writeable.ts       # Write permission check
+│       ├── git.ts                # Git initialization
+│       ├── install.ts            # Dependency installation
+│       └── copy.ts               # File copying utilities
 ├── templates/
-│   ├── base/             # Shared base template files
-│   └── evm/              # EVM wallet provider templates
-│       ├── rainbowkit/
+│   ├── base/                 # Shared base template (Next.js, Tailwind, etc.)
+│   ├── evm/                  # EVM chain templates
+│   │   ├── app/              # Chain-specific app files
+│   │   ├── components/       # Chain-specific components
+│   │   ├── rainbowkit/       # Wallet provider overrides
+│   │   ├── connectkit/
+│   │   ├── privy/
+│   │   ├── dynamic/
+│   │   ├── reown/
+│   │   ├── thirdweb/
+│   │   └── getpara/
+│   └── solana/               # Solana chain templates
+│       ├── app/
+│       ├── components/
+│       ├── wallet-adapter/
 │       ├── privy/
 │       ├── dynamic/
-│       └── reown/
-└── dist/                 # Build output
+│       ├── reown/
+│       └── thirdweb/
+├── test/
+│   └── cli.test.js           # Test suite
+└── dist/                     # Build output (generated)
 ```
+
+### Template Layering
+
+Templates are applied in order:
+1. `templates/base/` - Core Next.js setup
+2. `templates/{chain}/` - Chain-specific files (app/, components/)
+3. `templates/{chain}/{wallet}/` - Wallet provider overrides
 
 ## Adding a New Wallet Provider
 
-1. Create a new directory under `templates/evm/your-provider/`
-2. Add the required files (typically `components/Header.tsx`, `app/layout.tsx`, etc.)
-3. Update `src/index.ts` to include the new provider option
-4. Test the template generation locally
-5. Submit a PR with documentation
+### For EVM
 
-## Submitting Changes
+1. Create directory: `templates/evm/your-provider/`
+2. Add required files:
+   ```
+   templates/evm/your-provider/
+   ├── components/
+   │   ├── Providers.tsx    # Wallet provider setup
+   │   └── Header.tsx       # Wallet connect button
+   └── app/
+       └── layout.tsx       # (optional) Layout overrides
+   ```
+3. Update `src/index.ts`:
+   - Add to `WalletProvider` type
+   - Add to `WALLET_PROVIDERS` object
+   - Add dependencies in `updatePackageJson()`
+   - Add env vars in `updateEnvExample()`
+4. Update help text in `showHelp()`
+5. Add tests in `test/cli.test.js`
+6. Update README.md and CHANGELOG.md
 
-1. Ensure your code builds without errors:
+### For Solana
+
+Same process, but under `templates/solana/your-provider/`
+
+### Template Guidelines
+
+- Use `"use client"` directive for client components
+- Keep dependencies minimal
+- Follow existing patterns for consistency
+- Include proper TypeScript types
+- Use Tailwind CSS for styling
+
+## Testing
+
+### Run All Tests
+
+```bash
+npm test
+```
+
+### Test Coverage
+
+Tests cover:
+- CLI flags (`--help`, `--version`, `-c`, `-w`, etc.)
+- Error handling (invalid inputs, conflicts)
+- Template generation (file structure, dependencies)
+- Package configuration
+
+### Manual Testing
+
+```bash
+# Build and test locally
+npm run build
+
+# Test with different options
+node dist/index.js test-project --chain evm --wallet rainbowkit --yes
+node dist/index.js test-project --chain solana --wallet wallet-adapter --yes
+
+# Clean up test projects
+rm -rf test-project
+```
+
+## Pull Request Process
+
+### Step-by-Step Guide
+
+1. **Fork the repository** on GitHub (click the "Fork" button)
+
+2. **Clone your fork:**
    ```bash
-   npm run build
+   git clone https://github.com/YOUR_USERNAME/create-nextjs-dapp.git
+   cd create-nextjs-dapp
    ```
 
-2. Commit your changes with a descriptive message:
+3. **Add upstream remote:**
    ```bash
-   git commit -m "feat: add support for new wallet provider"
+   git remote add upstream https://github.com/0xmihirsahu/create-nextjs-dapp.git
    ```
 
-3. Push to your fork:
+4. **Create a feature branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+5. **Make your changes** and commit them
+
+6. **Sync with upstream before pushing:**
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+7. **Ensure quality:**
+   ```bash
+   npm run build    # No TypeScript errors
+   npm test         # All tests pass
+   ```
+
+8. **Push to your fork:**
    ```bash
    git push origin feature/your-feature-name
    ```
 
-4. Open a Pull Request against the `main` branch
+9. **Open a Pull Request:**
+   - Go to your fork on GitHub
+   - Click "Compare & pull request"
+   - Select `0xmihirsahu/create-nextjs-dapp:main` as the base branch
+   - Fill in the PR template
 
-## Pull Request Guidelines
+### PR Requirements
 
-- Keep PRs focused on a single change
-- Include a clear description of what the PR does
-- Update documentation if needed
-- Ensure CI checks pass
+- [ ] Clear, descriptive title
+- [ ] Description of changes and motivation
+- [ ] Tests for new functionality
+- [ ] Documentation updates (README, CHANGELOG)
+- [ ] No breaking changes (or clearly documented)
 
-## Commit Message Format
+### Review Process
 
-We follow conventional commits:
+1. Submit PR against `main` branch
+2. CI checks must pass
+3. Maintainer review
+4. Address feedback if needed
+5. Merge!
 
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `docs:` - Documentation changes
-- `chore:` - Maintenance tasks
-- `refactor:` - Code refactoring
+## Commit Guidelines
 
-## Code of Conduct
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-Be respectful and inclusive. We're all here to build something useful together.
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+
+| Type | Description |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting, no code change |
+| `refactor` | Code restructuring |
+| `test` | Adding/updating tests |
+| `chore` | Maintenance, dependencies |
+
+### Examples
+
+```bash
+feat(wallet): add ConnectKit provider for EVM
+fix(cli): handle empty directory edge case
+docs(readme): update installation instructions
+test(cli): add package manager flag tests
+chore(deps): update @clack/prompts to v0.9.0
+```
 
 ## Questions?
 
-Open an issue if you have questions or need help getting started.
+- Open an [issue](https://github.com/0xmihirsahu/create-nextjs-dapp/issues) for bugs or feature requests
+- Start a [discussion](https://github.com/0xmihirsahu/create-nextjs-dapp/discussions) for questions
+
+---
+
+Thank you for contributing!
