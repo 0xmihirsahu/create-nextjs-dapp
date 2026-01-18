@@ -1,6 +1,6 @@
 {
   "name": "create-nextjs-dapp",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Create a Next.js dApp with your preferred wallet provider",
   "bin": {
     "create-nextjs-dapp": "./dist/index.js"
@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",
     "dev": "tsup src/index.ts --format esm --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "nextjs",
@@ -25,6 +26,14 @@
   ],
   "author": "Mihir Sahu <0xmihirsahu@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xmihirsahu/create-nextjs-dapp.git"
+  },
+  "homepage": "https://github.com/0xmihirsahu/create-nextjs-dapp#readme",
+  "bugs": {
+    "url": "https://github.com/0xmihirsahu/create-nextjs-dapp/issues"
+  },
   "dependencies": {
     "@clack/prompts": "^0.8.2",
     "picocolors": "^1.1.1"

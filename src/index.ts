@@ -16,6 +16,64 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const VERSION = "0.1.0";
+
+function showHelp(): void {
+  console.log(`
+${pc.bold(pc.cyan("create-nextjs-dapp"))} ${pc.dim(`v${VERSION}`)}
+
+Create a Next.js dApp with your preferred wallet provider.
+
+${pc.bold("Usage:")}
+  ${pc.cyan("npx create-nextjs-dapp")} ${pc.dim("[project-name] [options]")}
+
+${pc.bold("Options:")}
+  ${pc.cyan("-c, --chain <chain>")}     Blockchain to use (evm, solana)
+  ${pc.cyan("-w, --wallet <provider>")} Wallet provider to use
+  ${pc.cyan("-y, --yes")}               Skip prompts and use defaults
+  ${pc.cyan("-h, --help")}              Show this help message
+  ${pc.cyan("-v, --version")}           Show version number
+
+${pc.bold("Wallet Providers:")}
+  ${pc.bold("EVM:")}
+    ${pc.cyan("rainbowkit")}  Best UX for connecting wallets ${pc.dim("(recommended)")}
+    ${pc.cyan("privy")}       Email, social, and wallet login with embedded wallets
+    ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets and onramps
+    ${pc.cyan("reown")}       WalletConnect's official SDK (formerly Web3Modal)
+    ${pc.cyan("thirdweb")}    Full-stack web3 development platform
+    ${pc.cyan("getpara")}     Embedded wallets with MPC key management
+
+  ${pc.bold("Solana:")}
+    ${pc.cyan("privy")}       Email, social, and wallet login
+    ${pc.cyan("dynamic")}     Multi-chain auth with embedded wallets
+    ${pc.cyan("reown")}       WalletConnect's official SDK
+    ${pc.cyan("thirdweb")}    Full-stack web3 development platform
+
+${pc.bold("Examples:")}
+  ${pc.dim("# Interactive mode")}
+  ${pc.cyan("npx create-nextjs-dapp")}
+
+  ${pc.dim("# Create with project name")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp")}
+
+  ${pc.dim("# Create with all options")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit")}
+
+  ${pc.dim("# Solana project")}
+  ${pc.cyan("npx create-nextjs-dapp my-solana-app -c solana -w dynamic")}
+
+  ${pc.dim("# Non-interactive with defaults")}
+  ${pc.cyan("npx create-nextjs-dapp my-dapp --yes")}
+
+${pc.bold("Learn more:")}
+  ${pc.dim("GitHub:")} ${pc.cyan("https://github.com/0xmihirsahu/create-nextjs-dapp")}
+`);
+}
+
+function showVersion(): void {
+  console.log(`create-nextjs-dapp v${VERSION}`);
+}
+
 type Chain = "evm" | "solana";
 type WalletProvider =
   | "rainbowkit"
@@ -29,6 +87,7 @@ interface CLIOptions {
   projectName?: string;
   chain?: Chain;
   wallet?: WalletProvider;
+  yes?: boolean;
 }
 
 interface ProviderInfo {
@@ -81,34 +140,85 @@ const CHAINS: Record<Chain, { name: string; description: string }> = {
   },
 };
 
+function exitWithError(message: string): never {
+  console.error(`\n${pc.red("Error:")} ${message}\n`);
+  console.error(`Run ${pc.cyan("create-nextjs-dapp --help")} for usage information.\n`);
+  process.exit(1);
+}
+
 function parseArgs(): CLIOptions {
   const args = process.argv.slice(2);
   const options: CLIOptions = {};
+  const validChains = Object.keys(CHAINS);
+  const validWallets = Object.keys(WALLET_PROVIDERS);
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
+    if (arg === "--help" || arg === "-h") {
+      showHelp();
+      process.exit(0);
+    }
+
+    if (arg === "--version" || arg === "-v") {
+      showVersion();
+      process.exit(0);
+    }
+
     if (arg === "--wallet" || arg === "-w") {
-      const value = args[++i]?.toLowerCase() as WalletProvider;
-      if (value && Object.keys(WALLET_PROVIDERS).includes(value)) {
-        options.wallet = value;
+      const value = args[++i]?.toLowerCase();
+      if (!value) {
+        exitWithError(`Missing value for ${arg}. Expected one of: ${validWallets.join(", ")}`);
       }
+      if (!validWallets.includes(value)) {
+        exitWithError(
+          `Invalid wallet provider "${value}".\n` +
+          `  Valid options: ${validWallets.join(", ")}`
+        );
+      }
+      options.wallet = value as WalletProvider;
     } else if (arg.startsWith("--wallet=")) {
-      const value = arg.split("=")[1]?.toLowerCase() as WalletProvider;
-      if (value && Object.keys(WALLET_PROVIDERS).includes(value)) {
-        options.wallet = value;
+      const value = arg.split("=")[1]?.toLowerCase();
+      if (!value || !validWallets.includes(value)) {
+        exitWithError(
+          `Invalid wallet provider "${value || ""}".\n` +
+          `  Valid options: ${validWallets.join(", ")}`
+        );
       }
+      options.wallet = value as WalletProvider;
     } else if (arg === "--chain" || arg === "-c") {
-      const value = args[++i]?.toLowerCase() as Chain;
-      if (value && Object.keys(CHAINS).includes(value)) {
-        options.chain = value;
+      const value = args[++i]?.toLowerCase();
+      if (!value) {
+        exitWithError(`Missing value for ${arg}. Expected one of: ${validChains.join(", ")}`);
       }
+      if (!validChains.includes(value)) {
+        exitWithError(
+          `Invalid chain "${value}".\n` +
+          `  Valid options: ${validChains.join(", ")}`
+        );
+      }
+      options.chain = value as Chain;
     } else if (arg.startsWith("--chain=")) {
-      const value = arg.split("=")[1]?.toLowerCase() as Chain;
-      if (value && Object.keys(CHAINS).includes(value)) {
-        options.chain = value;
+      const value = arg.split("=")[1]?.toLowerCase();
+      if (!value || !validChains.includes(value)) {
+        exitWithError(
+          `Invalid chain "${value || ""}".\n` +
+          `  Valid options: ${validChains.join(", ")}`
+        );
       }
-    } else if (!arg.startsWith("-") && !options.projectName) {
+      options.chain = value as Chain;
+    } else if (arg === "--yes" || arg === "-y") {
+      options.yes = true;
+    } else if (arg.startsWith("-")) {
+      exitWithError(`Unknown option "${arg}".`);
+    } else if (!options.projectName) {
+      // Validate project name format
+      if (!/^[a-z0-9-]+$/.test(arg)) {
+        exitWithError(
+          `Invalid project name "${arg}".\n` +
+          `  Project name can only contain lowercase letters, numbers, and hyphens.`
+        );
+      }
       options.projectName = arg;
     }
   }
@@ -352,49 +462,59 @@ async function main() {
 
   const cliOptions = parseArgs();
 
+  const useDefaults = cliOptions.yes;
+
   // Project name
   let projectName = cliOptions.projectName;
   if (!projectName) {
-    const result = await p.text({
-      message: "What is your project named?",
-      placeholder: "my-dapp",
-      defaultValue: "my-dapp",
-      validate: (value) => {
-        if (!value) return "Project name is required";
-        if (!/^[a-z0-9-]+$/.test(value)) {
-          return "Project name can only contain lowercase letters, numbers, and hyphens";
-        }
-        return undefined;
-      },
-    });
+    if (useDefaults) {
+      projectName = "my-dapp";
+    } else {
+      const result = await p.text({
+        message: "What is your project named?",
+        placeholder: "my-dapp",
+        defaultValue: "my-dapp",
+        validate: (value) => {
+          if (!value) return "Project name is required";
+          if (!/^[a-z0-9-]+$/.test(value)) {
+            return "Project name can only contain lowercase letters, numbers, and hyphens";
+          }
+          return undefined;
+        },
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      projectName = result;
     }
-
-    projectName = result;
   }
 
   // Chain selection
   let chain = cliOptions.chain;
   if (!chain) {
-    const result = await p.select({
-      message: "Which blockchain do you want to build on?",
-      options: Object.entries(CHAINS).map(([value, { name, description }]) => ({
-        value: value as Chain,
-        label: name,
-        hint: description,
-      })),
-      initialValue: "evm" as Chain,
-    });
+    if (useDefaults) {
+      chain = "evm";
+    } else {
+      const result = await p.select({
+        message: "Which blockchain do you want to build on?",
+        options: Object.entries(CHAINS).map(([value, { name, description }]) => ({
+          value: value as Chain,
+          label: name,
+          hint: description,
+        })),
+        initialValue: "evm" as Chain,
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      chain = result;
     }
-
-    chain = result;
   }
 
   // Get available providers for selected chain
@@ -405,6 +525,16 @@ async function main() {
 
   // Validate wallet is compatible with chain
   if (wallet && !availableProviders.includes(wallet)) {
+    if (useDefaults) {
+      // In non-interactive mode, exit with error
+      p.log.error(
+        `${pc.red(WALLET_PROVIDERS[wallet].name)} doesn't support ${pc.cyan(CHAINS[chain].name)}.`
+      );
+      p.log.info(
+        `Available providers for ${CHAINS[chain].name}: ${availableProviders.map(w => pc.cyan(w)).join(", ")}`
+      );
+      process.exit(1);
+    }
     p.log.warn(
       `${WALLET_PROVIDERS[wallet].name} doesn't support ${CHAINS[chain].name}. Please choose another provider.`
     );
@@ -412,22 +542,26 @@ async function main() {
   }
 
   if (!wallet) {
-    const result = await p.select({
-      message: "Which wallet provider do you want to use?",
-      options: availableProviders.map((key) => ({
-        value: key,
-        label: WALLET_PROVIDERS[key].name,
-        hint: WALLET_PROVIDERS[key].description,
-      })),
-      initialValue: availableProviders[0],
-    });
+    if (useDefaults) {
+      wallet = availableProviders[0];
+    } else {
+      const result = await p.select({
+        message: "Which wallet provider do you want to use?",
+        options: availableProviders.map((key) => ({
+          value: key,
+          label: WALLET_PROVIDERS[key].name,
+          hint: WALLET_PROVIDERS[key].description,
+        })),
+        initialValue: availableProviders[0],
+      });
 
-    if (p.isCancel(result)) {
-      p.cancel(pc.dim("See you next time!"));
-      process.exit(0);
+      if (p.isCancel(result)) {
+        p.cancel(pc.dim("See you next time!"));
+        process.exit(0);
+      }
+
+      wallet = result;
     }
-
-    wallet = result;
   }
 
   const projectPath = resolve(process.cwd(), projectName);
@@ -447,41 +581,112 @@ async function main() {
   const chainTemplate = join(templatesDir, chain);
   const walletTemplate = join(templatesDir, chain, wallet);
 
-  // Copy base template first
-  copyDir(baseTemplate, projectPath, ["node_modules", ".next", ".git"]);
+  // Validate templates directory exists
+  if (!existsSync(templatesDir)) {
+    s.stop(pc.red("✗") + " Failed to create project");
+    p.log.error(
+      `Templates directory not found at ${pc.dim(templatesDir)}\n` +
+      `  This is likely a corrupted installation. Try reinstalling:\n` +
+      `  ${pc.cyan("npm install -g create-nextjs-dapp")}`
+    );
+    process.exit(1);
+  }
 
-  // Copy chain-specific base template (overwrite base files)
-  if (existsSync(chainTemplate)) {
-    // Only copy files directly in chain folder, not subdirectories (which are wallet templates)
-    const entries = readdirSync(chainTemplate, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) {
-        cpSync(join(chainTemplate, entry.name), join(projectPath, entry.name));
-      } else if (
-        !Object.keys(WALLET_PROVIDERS).includes(entry.name) &&
-        entry.name !== "base"
-      ) {
-        // Copy non-wallet directories (like 'app', 'components', etc.)
-        copyDir(
-          join(chainTemplate, entry.name),
-          join(projectPath, entry.name)
-        );
+  // Validate base template exists
+  if (!existsSync(baseTemplate)) {
+    s.stop(pc.red("✗") + " Failed to create project");
+    p.log.error(
+      `Base template not found at ${pc.dim(baseTemplate)}\n` +
+      `  This is likely a corrupted installation. Try reinstalling:\n` +
+      `  ${pc.cyan("npm install -g create-nextjs-dapp")}`
+    );
+    process.exit(1);
+  }
+
+  // Validate wallet template exists
+  if (!existsSync(walletTemplate)) {
+    s.stop(pc.red("✗") + " Failed to create project");
+    p.log.error(
+      `Template for ${pc.cyan(WALLET_PROVIDERS[wallet].name)} on ${pc.cyan(CHAINS[chain].name)} not found.\n` +
+      `  Expected path: ${pc.dim(walletTemplate)}\n` +
+      `  This wallet/chain combination may not be supported yet.`
+    );
+    process.exit(1);
+  }
+
+  try {
+    // Copy base template first
+    copyDir(baseTemplate, projectPath, ["node_modules", ".next", ".git"]);
+
+    // Copy chain-specific base template (overwrite base files)
+    if (existsSync(chainTemplate)) {
+      // Only copy files directly in chain folder, not subdirectories (which are wallet templates)
+      const entries = readdirSync(chainTemplate, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) {
+          cpSync(join(chainTemplate, entry.name), join(projectPath, entry.name));
+        } else if (
+          !Object.keys(WALLET_PROVIDERS).includes(entry.name) &&
+          entry.name !== "base"
+        ) {
+          // Copy non-wallet directories (like 'app', 'components', etc.)
+          copyDir(
+            join(chainTemplate, entry.name),
+            join(projectPath, entry.name)
+          );
+        }
       }
     }
+
+    // Copy wallet-specific files (overwrite chain files)
+    if (existsSync(walletTemplate)) {
+      copyDir(walletTemplate, projectPath);
+    }
+
+    // Update package.json
+    updatePackageJson(projectPath, projectName, chain, wallet);
+
+    // Update .env.example
+    updateEnvExample(projectPath, chain, wallet);
+
+    s.stop(pc.green("✓") + " Project created!");
+  } catch (err) {
+    s.stop(pc.red("✗") + " Failed to create project");
+
+    // Clean up partial project if it exists
+    if (existsSync(projectPath)) {
+      try {
+        const { rmSync } = await import("fs");
+        rmSync(projectPath, { recursive: true, force: true });
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+
+    if (err instanceof Error) {
+      if (err.message.includes("EACCES") || err.message.includes("permission")) {
+        p.log.error(
+          `Permission denied. Unable to write to ${pc.dim(projectPath)}\n` +
+          `  Try running with appropriate permissions or choose a different location.`
+        );
+      } else if (err.message.includes("ENOSPC")) {
+        p.log.error(`Not enough disk space to create project.`);
+      } else if (err.message.includes("ENOENT")) {
+        p.log.error(
+          `File or directory not found during project creation.\n` +
+          `  ${pc.dim(err.message)}`
+        );
+      } else {
+        p.log.error(
+          `An error occurred while creating the project:\n` +
+          `  ${pc.dim(err.message)}`
+        );
+      }
+    } else {
+      p.log.error(`An unexpected error occurred while creating the project.`);
+    }
+    process.exit(1);
   }
-
-  // Copy wallet-specific files (overwrite chain files)
-  if (existsSync(walletTemplate)) {
-    copyDir(walletTemplate, projectPath);
-  }
-
-  // Update package.json
-  updatePackageJson(projectPath, projectName, chain, wallet);
-
-  // Update .env.example
-  updateEnvExample(projectPath, chain, wallet);
-
-  s.stop(pc.green("✓") + " Project created!");
 
   // Configuration summary
   console.log();
@@ -510,7 +715,7 @@ async function main() {
 
   p.outro(
     pc.bold(pc.green("✨ Happy building!")) +
-      pc.dim(" — Star us on GitHub: github.com/0xmihirsahu/web3-ui-starter-pack")
+      pc.dim(" — Star us on GitHub: github.com/0xmihirsahu/create-nextjs-dapp")
   );
 }
 
