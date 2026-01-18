@@ -106,8 +106,27 @@ npm run test:all
 
 ## Success Criteria
 
-- [ ] All helper functions have unit tests
-- [ ] All 12 wallet/chain combinations generate valid projects
-- [ ] Representative projects build successfully
-- [ ] Tests run in < 30 seconds (excluding build tests)
-- [ ] Build tests run in < 5 minutes in CI
+- [x] All helper functions have unit tests (51 tests)
+- [x] All 12 wallet/chain combinations generate valid projects
+- [x] Representative projects build successfully (EVM+RainbowKit, EVM+Thirdweb, Solana+wallet-adapter)
+- [x] Tests run in < 30 seconds (excluding build tests) - ~4.3s for 92 tests
+- [ ] Build tests run in < 5 minutes in CI (to be verified)
+
+## Implementation Notes
+
+### Test Count Summary
+- **Unit tests (helpers.test.js)**: 51 tests
+- **Integration tests (cli.test.js)**: 41 tests
+- **Build validation tests (build.test.js)**: 4 tests (slow, CI-focused)
+- **Total**: 96 tests
+
+### Scripts Added
+```json
+{
+  "test": "node --test test/cli.test.js test/helpers.test.js",
+  "test:all": "node --test test/*.test.js",
+  "test:build": "node --test test/build.test.js",
+  "test:unit": "node --test test/helpers.test.js",
+  "test:integration": "node --test test/cli.test.js"
+}
+```
