@@ -287,9 +287,6 @@ describe("Package Configuration", () => {
 });
 
 describe("Project Generation (Integration)", () => {
-  const projectName = "test-generated-dapp";
-  const projectPath = join(TEST_DIR, projectName);
-
   before(() => {
     cleanup();
     mkdirSync(TEST_DIR, { recursive: true });
@@ -299,10 +296,14 @@ describe("Project Generation (Integration)", () => {
     cleanup();
   });
 
-  test("generates EVM project with rainbowkit using --yes flag", () => {
-    // Generate project with all flags (non-interactive)
+  // Helper function to generate and verify a project
+  function generateAndVerifyProject(chain, wallet, expectedDeps, expectedEnvVars) {
+    const projectName = `test-${chain}-${wallet}`;
+    const projectPath = join(TEST_DIR, projectName);
+
+    // Generate project
     execSync(
-      `node ${CLI_PATH} ${projectName} --chain evm --wallet rainbowkit --yes`,
+      `node ${CLI_PATH} ${projectName} --chain ${chain} --wallet ${wallet} --yes`,
       {
         cwd: TEST_DIR,
         encoding: "utf-8",
@@ -311,7 +312,7 @@ describe("Project Generation (Integration)", () => {
     );
 
     // Verify project was created
-    assert.ok(existsSync(projectPath), "Project directory should be created");
+    assert.ok(existsSync(projectPath), `${chain}/${wallet} project should be created`);
 
     // Verify essential files exist
     const requiredFiles = [
@@ -325,60 +326,265 @@ describe("Project Generation (Integration)", () => {
     for (const file of requiredFiles) {
       assert.ok(
         existsSync(join(projectPath, file)),
-        `Generated project should have ${file}`
+        `${chain}/${wallet} project should have ${file}`
       );
     }
 
-    // Verify package.json has correct name, description, and dependencies
+    // Verify directories exist
+    assert.ok(existsSync(join(projectPath, "app")), `${chain}/${wallet} should have app directory`);
+    assert.ok(existsSync(join(projectPath, "components")), `${chain}/${wallet} should have components directory`);
+
+    // Verify package.json
     const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
     assert.strictEqual(pkg.name, projectName, "Package name should match project name");
-    assert.ok(pkg.description.includes("Ethereum"), "Description should mention Ethereum for EVM");
-    assert.ok(pkg.description.includes("RainbowKit"), "Description should mention wallet provider");
-    assert.ok(pkg.dependencies["@rainbow-me/rainbowkit"], "Should have rainbowkit dependency");
-    assert.ok(pkg.dependencies["wagmi"], "Should have wagmi dependency");
-    assert.ok(pkg.dependencies["viem"], "Should have viem dependency");
 
-    // Verify .env.example has correct content
+    // Verify expected dependencies
+    for (const dep of expectedDeps) {
+      assert.ok(pkg.dependencies[dep], `${chain}/${wallet} should have ${dep} dependency`);
+    }
+
+    // Verify .env.example has expected variables
     const envContent = readFileSync(join(projectPath, ".env.example"), "utf-8");
-    assert.ok(
-      envContent.includes("WALLETCONNECT_PROJECT_ID"),
-      ".env.example should have WalletConnect config for rainbowkit"
-    );
+    for (const envVar of expectedEnvVars) {
+      assert.ok(
+        envContent.includes(envVar),
+        `${chain}/${wallet} .env.example should have ${envVar}`
+      );
+    }
 
-    // Verify app directory structure
-    assert.ok(
-      existsSync(join(projectPath, "app")),
-      "Should have app directory"
-    );
-    assert.ok(
-      existsSync(join(projectPath, "components")),
-      "Should have components directory"
-    );
+    // Cleanup
+    rmSync(projectPath, { recursive: true, force: true });
+  }
+
+  // ==========================================
+  // EVM Wallet Tests (7 wallets)
+  // ==========================================
+  describe("EVM Wallets", () => {
+    test("generates EVM project with rainbowkit", () => {
+      generateAndVerifyProject(
+        "evm",
+        "rainbowkit",
+        ["@rainbow-me/rainbowkit", "wagmi", "viem"],
+        ["WALLETCONNECT_PROJECT_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with connectkit", () => {
+      generateAndVerifyProject(
+        "evm",
+        "connectkit",
+        ["connectkit", "wagmi", "viem"],
+        ["WALLETCONNECT_PROJECT_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with privy", () => {
+      generateAndVerifyProject(
+        "evm",
+        "privy",
+        ["@privy-io/react-auth", "@privy-io/wagmi", "wagmi", "viem"],
+        ["PRIVY_APP_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with dynamic", () => {
+      generateAndVerifyProject(
+        "evm",
+        "dynamic",
+        ["@dynamic-labs/ethereum", "@dynamic-labs/sdk-react-core", "wagmi", "viem"],
+        ["DYNAMIC_ENVIRONMENT_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with reown", () => {
+      generateAndVerifyProject(
+        "evm",
+        "reown",
+        ["@reown/appkit", "@reown/appkit-adapter-wagmi", "wagmi", "viem"],
+        ["REOWN_PROJECT_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with thirdweb", () => {
+      generateAndVerifyProject(
+        "evm",
+        "thirdweb",
+        ["thirdweb"],
+        ["THIRDWEB_CLIENT_ID", "CONTRACT_ADDRESS"]
+      );
+    });
+
+    test("generates EVM project with getpara", () => {
+      generateAndVerifyProject(
+        "evm",
+        "getpara",
+        ["@getpara/react-sdk", "wagmi", "viem"],
+        ["PARA_API_KEY", "CONTRACT_ADDRESS"]
+      );
+    });
   });
 
-  test("generates Solana project with dynamic using --yes flag", () => {
-    const solanaProjectName = "test-solana-dapp";
-    const solanaProjectPath = join(TEST_DIR, solanaProjectName);
+  // ==========================================
+  // Solana Wallet Tests (5 wallets)
+  // ==========================================
+  describe("Solana Wallets", () => {
+    test("generates Solana project with wallet-adapter", () => {
+      generateAndVerifyProject(
+        "solana",
+        "wallet-adapter",
+        ["@solana/web3.js", "@solana/wallet-adapter-react", "@solana/wallet-adapter-react-ui"],
+        ["PROGRAM_ID"]
+      );
+    });
 
-    execSync(
-      `node ${CLI_PATH} ${solanaProjectName} --chain solana --wallet dynamic --yes`,
-      {
-        cwd: TEST_DIR,
-        encoding: "utf-8",
-        stdio: "pipe",
-      }
-    );
+    test("generates Solana project with privy", () => {
+      generateAndVerifyProject(
+        "solana",
+        "privy",
+        ["@privy-io/react-auth", "@solana/web3.js"],
+        ["PRIVY_APP_ID", "PROGRAM_ID"]
+      );
+    });
 
-    assert.ok(existsSync(solanaProjectPath), "Solana project should be created");
+    test("generates Solana project with dynamic", () => {
+      generateAndVerifyProject(
+        "solana",
+        "dynamic",
+        ["@dynamic-labs/solana", "@dynamic-labs/sdk-react-core", "@solana/web3.js"],
+        ["DYNAMIC_ENVIRONMENT_ID", "PROGRAM_ID"]
+      );
+    });
 
-    const pkg = JSON.parse(readFileSync(join(solanaProjectPath, "package.json"), "utf-8"));
-    assert.strictEqual(pkg.name, solanaProjectName, "Package name should match");
-    assert.ok(pkg.description.includes("Solana"), "Description should mention Solana");
-    assert.ok(pkg.description.includes("Dynamic"), "Description should mention wallet provider");
-    assert.ok(pkg.dependencies["@solana/web3.js"], "Should have solana web3 dependency");
-    assert.ok(pkg.dependencies["@dynamic-labs/solana"], "Should have dynamic solana dependency");
+    test("generates Solana project with reown", () => {
+      generateAndVerifyProject(
+        "solana",
+        "reown",
+        ["@reown/appkit", "@reown/appkit-adapter-solana", "@solana/web3.js"],
+        ["REOWN_PROJECT_ID", "PROGRAM_ID"]
+      );
+    });
 
-    // Cleanup this specific project
-    rmSync(solanaProjectPath, { recursive: true, force: true });
+    test("generates Solana project with thirdweb", () => {
+      generateAndVerifyProject(
+        "solana",
+        "thirdweb",
+        ["thirdweb", "@solana/web3.js"],
+        ["THIRDWEB_CLIENT_ID", "PROGRAM_ID"]
+      );
+    });
+  });
+
+  // ==========================================
+  // Edge Cases
+  // ==========================================
+  describe("Edge Cases", () => {
+    test("--git flag attempts git initialization", () => {
+      const projectName = "test-with-git";
+      const projectPath = join(TEST_DIR, projectName);
+
+      // Note: When running inside an existing git repo (like during development),
+      // git init will not create a new .git directory. This test verifies the
+      // --git flag doesn't cause errors and the project is created successfully.
+      const output = execSync(
+        `node ${CLI_PATH} ${projectName} --chain evm --wallet rainbowkit --yes --git`,
+        {
+          cwd: TEST_DIR,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }
+      );
+
+      assert.ok(existsSync(projectPath), "Project should be created");
+      // The output should mention git initialization attempt
+      assert.ok(
+        output.includes("git") || output.includes("Git"),
+        "Output should mention git initialization"
+      );
+
+      rmSync(projectPath, { recursive: true, force: true });
+    });
+
+    test("handles project creation in current directory style name", () => {
+      const projectName = "my-dapp";
+      const projectPath = join(TEST_DIR, projectName);
+
+      execSync(
+        `node ${CLI_PATH} ${projectName} --chain evm --wallet rainbowkit --yes`,
+        {
+          cwd: TEST_DIR,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }
+      );
+
+      assert.ok(existsSync(projectPath), "Project should be created");
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
+      assert.strictEqual(pkg.name, projectName, "Package name should match");
+
+      rmSync(projectPath, { recursive: true, force: true });
+    });
+
+    test("project description mentions correct chain for EVM", () => {
+      const projectName = "test-evm-desc";
+      const projectPath = join(TEST_DIR, projectName);
+
+      execSync(
+        `node ${CLI_PATH} ${projectName} --chain evm --wallet rainbowkit --yes`,
+        {
+          cwd: TEST_DIR,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }
+      );
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
+      assert.ok(pkg.description.includes("Ethereum"), "Description should mention Ethereum");
+      assert.ok(pkg.description.includes("RainbowKit"), "Description should mention wallet");
+
+      rmSync(projectPath, { recursive: true, force: true });
+    });
+
+    test("project description mentions correct chain for Solana", () => {
+      const projectName = "test-solana-desc";
+      const projectPath = join(TEST_DIR, projectName);
+
+      execSync(
+        `node ${CLI_PATH} ${projectName} --chain solana --wallet wallet-adapter --yes`,
+        {
+          cwd: TEST_DIR,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }
+      );
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
+      assert.ok(pkg.description.includes("Solana"), "Description should mention Solana");
+      assert.ok(pkg.description.includes("Solana Wallet Adapter"), "Description should mention wallet");
+
+      rmSync(projectPath, { recursive: true, force: true });
+    });
+
+    test("dependencies are sorted alphabetically", () => {
+      const projectName = "test-sorted-deps";
+      const projectPath = join(TEST_DIR, projectName);
+
+      execSync(
+        `node ${CLI_PATH} ${projectName} --chain evm --wallet rainbowkit --yes`,
+        {
+          cwd: TEST_DIR,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }
+      );
+
+      const pkg = JSON.parse(readFileSync(join(projectPath, "package.json"), "utf-8"));
+      const deps = Object.keys(pkg.dependencies);
+      const sortedDeps = [...deps].sort((a, b) => a.localeCompare(b));
+
+      assert.deepStrictEqual(deps, sortedDeps, "Dependencies should be sorted alphabetically");
+
+      rmSync(projectPath, { recursive: true, force: true });
+    });
   });
 });
