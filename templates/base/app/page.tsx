@@ -19,7 +19,7 @@ const Home = () => {
         <div className="max-w-4xl mx-auto px-6 flex items-center justify-between text-xs text-muted-foreground">
           <span>built with next.js + wagmi + rainbowkit</span>
           <a
-            href="https://github.com"
+            href="https://github.com/0xmihirsahu/create-nextjs-dapp"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
