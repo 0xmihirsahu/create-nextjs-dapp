@@ -2,18 +2,23 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-} from "fs";
+import { cpSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from "fs";
 import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import updateNotifier from "update-notifier";
+import {
+  getPkgManager,
+  validateNpmName,
+  isFolderEmpty,
+  getConflictingFiles,
+  isWriteable,
+  tryGitInit,
+  install,
+  getRunCommand,
+  getInstallCommand,
+  copyDir,
+  type PackageManager,
+} from "./helpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,6 +55,10 @@ ${pc.bold("Options:")}
   ${pc.cyan("-y, --yes")}               Skip prompts and use defaults
   ${pc.cyan("--git")}                   Initialize a git repository
   ${pc.cyan("--install")}               Install dependencies after creation
+  ${pc.cyan("--use-npm")}               Use npm as the package manager
+  ${pc.cyan("--use-yarn")}              Use yarn as the package manager
+  ${pc.cyan("--use-pnpm")}              Use pnpm as the package manager
+  ${pc.cyan("--use-bun")}               Use bun as the package manager
   ${pc.cyan("-h, --help")}              Show this help message
   ${pc.cyan("-v, --version")}           Show version number
 
@@ -116,6 +125,7 @@ interface CLIOptions {
   yes?: boolean;
   git?: boolean;
   install?: boolean;
+  packageManager?: PackageManager;
 }
 
 interface ProviderInfo {
@@ -251,14 +261,23 @@ function parseArgs(): CLIOptions {
       options.git = true;
     } else if (arg === "--install") {
       options.install = true;
+    } else if (arg === "--use-npm") {
+      options.packageManager = "npm";
+    } else if (arg === "--use-yarn") {
+      options.packageManager = "yarn";
+    } else if (arg === "--use-pnpm") {
+      options.packageManager = "pnpm";
+    } else if (arg === "--use-bun") {
+      options.packageManager = "bun";
     } else if (arg.startsWith("-")) {
       exitWithError(`Unknown option "${arg}".`);
     } else if (!options.projectName) {
-      // Validate project name format
-      if (!/^[a-z0-9-]+$/.test(arg)) {
+      // Validate project name using npm naming rules
+      const validation = validateNpmName(arg);
+      if (!validation.valid) {
         exitWithError(
           `Invalid project name "${arg}".\n` +
-          `  Project name can only contain lowercase letters, numbers, and hyphens.`
+          `  ${validation.problems?.join("\n  ")}`
         );
       }
       options.projectName = arg;
@@ -268,24 +287,6 @@ function parseArgs(): CLIOptions {
   return options;
 }
 
-function copyDir(src: string, dest: string, excludes: string[] = []) {
-  mkdirSync(dest, { recursive: true });
-
-  const entries = readdirSync(src, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
-
-    if (excludes.includes(entry.name)) continue;
-
-    if (entry.isDirectory()) {
-      copyDir(srcPath, destPath, excludes);
-    } else {
-      cpSync(srcPath, destPath);
-    }
-  }
-}
 
 function getProvidersForChain(chain: Chain): WalletProvider[] {
   return (Object.entries(WALLET_PROVIDERS) as [WalletProvider, ProviderInfo][])
@@ -531,6 +532,9 @@ async function main() {
 
   const useDefaults = cliOptions.yes;
 
+  // Detect package manager (use flag if specified, otherwise detect from environment)
+  const packageManager = cliOptions.packageManager || getPkgManager();
+
   // Project name
   let projectName = cliOptions.projectName;
   if (!projectName) {
@@ -543,8 +547,9 @@ async function main() {
         defaultValue: "my-dapp",
         validate: (value) => {
           if (!value) return "Project name is required";
-          if (!/^[a-z0-9-]+$/.test(value)) {
-            return "Project name can only contain lowercase letters, numbers, and hyphens";
+          const validation = validateNpmName(value);
+          if (!validation.valid) {
+            return validation.problems?.[0] || "Invalid project name";
           }
           return undefined;
         },
@@ -633,10 +638,49 @@ async function main() {
 
   const projectPath = resolve(process.cwd(), projectName);
 
-  // Check if directory exists
-  if (existsSync(projectPath)) {
-    p.log.error(`Directory ${pc.red(projectName)} already exists`);
+  // Check if directory is writeable
+  const root = resolve(projectPath, "..");
+  if (!isWriteable(root)) {
+    p.log.error(
+      `The directory ${pc.dim(root)} is not writable.\n` +
+      `  Please check your permissions and try again.`
+    );
     process.exit(1);
+  }
+
+  // Check if directory exists and handle conflicts
+  if (existsSync(projectPath)) {
+    if (!isFolderEmpty(projectPath, projectName)) {
+      const conflicts = getConflictingFiles(projectPath);
+
+      if (useDefaults) {
+        p.log.error(
+          `Directory ${pc.red(projectName)} contains files that could conflict:\n` +
+          `  ${conflicts.slice(0, 5).join(", ")}${conflicts.length > 5 ? `, and ${conflicts.length - 5} more` : ""}`
+        );
+        process.exit(1);
+      }
+
+      p.log.warn(
+        `Directory ${pc.yellow(projectName)} contains files that could conflict:\n` +
+        `  ${conflicts.slice(0, 5).join(", ")}${conflicts.length > 5 ? `, and ${conflicts.length - 5} more` : ""}`
+      );
+
+      const overwrite = await p.confirm({
+        message: "Would you like to overwrite these files?",
+        initialValue: false,
+      });
+
+      if (p.isCancel(overwrite) || !overwrite) {
+        p.cancel(pc.dim("Operation cancelled."));
+        process.exit(0);
+      }
+
+      // Remove conflicting files
+      for (const file of conflicts) {
+        rmSync(join(projectPath, file), { recursive: true, force: true });
+      }
+    }
   }
 
   const s = p.spinner();
@@ -722,15 +766,10 @@ async function main() {
     if (cliOptions.git) {
       const gitSpinner = p.spinner();
       gitSpinner.start(pc.cyan("◌") + " Initializing git repository...");
-      try {
-        execSync("git init", { cwd: projectPath, stdio: "pipe" });
-        execSync("git add -A", { cwd: projectPath, stdio: "pipe" });
-        execSync('git commit -m "Initial commit from create-nextjs-dapp"', {
-          cwd: projectPath,
-          stdio: "pipe",
-        });
+      const gitInitialized = tryGitInit(projectPath);
+      if (gitInitialized) {
         gitSpinner.stop(pc.green("✓") + " Git repository initialized!");
-      } catch {
+      } else {
         gitSpinner.stop(pc.yellow("⚠") + " Git initialization failed (git may not be installed)");
       }
     }
@@ -738,11 +777,11 @@ async function main() {
     // Install dependencies if requested
     if (cliOptions.install) {
       const installSpinner = p.spinner();
-      installSpinner.start(pc.cyan("◌") + " Installing dependencies...");
-      try {
-        execSync("npm install", { cwd: projectPath, stdio: "pipe" });
+      installSpinner.start(pc.cyan("◌") + ` Installing dependencies with ${packageManager}...`);
+      const installed = install(projectPath, packageManager);
+      if (installed) {
         installSpinner.stop(pc.green("✓") + " Dependencies installed!");
-      } catch {
+      } else {
         installSpinner.stop(pc.yellow("⚠") + " Failed to install dependencies");
       }
     }
@@ -752,7 +791,6 @@ async function main() {
     // Clean up partial project if it exists
     if (existsSync(projectPath)) {
       try {
-        const { rmSync } = await import("fs");
         rmSync(projectPath, { recursive: true, force: true });
       } catch {
         // Ignore cleanup errors
@@ -797,9 +835,9 @@ async function main() {
   // Next steps with styled box (dynamic based on what was done)
   const nextSteps: string[] = [`${pc.cyan("cd")} ${projectName}`];
   if (!cliOptions.install) {
-    nextSteps.push(`${pc.cyan("npm")} install`);
+    nextSteps.push(pc.cyan(getInstallCommand(packageManager)));
   }
-  nextSteps.push(`${pc.cyan("npm")} run dev`);
+  nextSteps.push(pc.cyan(getRunCommand(packageManager)));
 
   console.log();
   console.log(`  ${pc.bold(pc.white("Next steps:"))}`);

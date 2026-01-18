@@ -66,6 +66,15 @@ describe("CLI", () => {
     assert.ok(output.includes("--install"), "Should show --install option");
     assert.ok(output.includes("Install dependencies"), "Should describe --install");
   });
+
+  test("--help shows package manager flags", () => {
+    const output = execSync(`node ${CLI_PATH} --help`, { encoding: "utf-8" });
+
+    assert.ok(output.includes("--use-npm"), "Should show --use-npm option");
+    assert.ok(output.includes("--use-yarn"), "Should show --use-yarn option");
+    assert.ok(output.includes("--use-pnpm"), "Should show --use-pnpm option");
+    assert.ok(output.includes("--use-bun"), "Should show --use-bun option");
+  });
 });
 
 describe("Error Handling", () => {
@@ -131,6 +140,30 @@ describe("Error Handling", () => {
         err.stdout.includes("doesn't support") || err.stderr.includes("doesn't support"),
         "Should show incompatibility error"
       );
+    }
+  });
+
+  test("shows error for project name starting with dot", () => {
+    try {
+      execSync(`node ${CLI_PATH} .invalid-name`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Invalid project name"), "Should show invalid name error");
+    }
+  });
+
+  test("shows error for project name with uppercase letters", () => {
+    try {
+      execSync(`node ${CLI_PATH} InvalidName`, {
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+      assert.fail("Should have thrown an error");
+    } catch (err) {
+      assert.ok(err.stderr.includes("Invalid project name"), "Should show invalid name error");
     }
   });
 });
