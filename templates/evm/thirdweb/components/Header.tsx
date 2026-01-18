@@ -1,0 +1,54 @@
+"use client";
+
+import { ConnectButton } from "thirdweb/react";
+import { sepolia } from "thirdweb/chains";
+import { ThemeToggle } from "./ThemeToggle";
+import { client } from "../lib/client";
+
+const Header = () => {
+  return (
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+      <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-sm font-medium text-foreground">
+            web3_starter
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <ConnectButton
+            client={client}
+            chain={sepolia}
+            connectButton={{
+              label: "connect wallet",
+              style: {
+                padding: "8px 16px",
+                fontSize: "14px",
+                border: "1px solid hsl(217, 91%, 60%)",
+                color: "hsl(217, 91%, 60%)",
+                background: "transparent",
+                borderRadius: "0px",
+                fontFamily: "var(--font-mono), ui-monospace, monospace",
+              },
+            }}
+            detailsButton={{
+              style: {
+                padding: "6px 12px",
+                fontSize: "14px",
+                border: "1px solid hsl(217, 91%, 60%)",
+                color: "hsl(217, 91%, 60%)",
+                background: "transparent",
+                borderRadius: "0px",
+                fontFamily: "var(--font-mono), ui-monospace, monospace",
+              },
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export { Header };

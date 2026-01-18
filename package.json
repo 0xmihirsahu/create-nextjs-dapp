@@ -1,0 +1,44 @@
+{
+  "name": "create-nextjs-dapp",
+  "version": "1.0.0",
+  "description": "Create a Next.js dApp with your preferred wallet provider",
+  "bin": {
+    "create-nextjs-dapp": "./dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "nextjs",
+    "dapp",
+    "web3",
+    "ethereum",
+    "rainbowkit",
+    "privy",
+    "dynamic",
+    "reown",
+    "wagmi",
+    "cli"
+  ],
+  "author": "Mihir Sahu <0xmihirsahu@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.8.2",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ]
+}
