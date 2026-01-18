@@ -19,7 +19,7 @@ npx create-nextjs-dapp my-dapp --chain evm --wallet rainbowkit
 - Interactive CLI with beautiful prompts
 - Multiple blockchain support (EVM, Solana)
 - Popular wallet providers pre-configured
-- TypeScript + Next.js 14 (App Router)
+- TypeScript + Next.js 16 (App Router)
 - Tailwind CSS + shadcn/ui components
 - Ready-to-use contract/program interaction hooks
 

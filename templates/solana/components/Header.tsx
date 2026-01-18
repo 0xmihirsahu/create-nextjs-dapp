@@ -1,6 +1,5 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -17,18 +16,7 @@ const Header = () => {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <WalletMultiButton
-            style={{
-              backgroundColor: "transparent",
-              border: "1px solid hsl(217, 91%, 60%)",
-              color: "hsl(217, 91%, 60%)",
-              borderRadius: "0px",
-              fontFamily: "var(--font-mono), ui-monospace, monospace",
-              fontSize: "14px",
-              padding: "8px 16px",
-              height: "auto",
-            }}
-          />
+          <WalletMultiButton />
         </div>
       </div>
     </header>

@@ -18,33 +18,7 @@ const Header = () => {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <ConnectButton
-            client={client}
-            chain={sepolia}
-            connectButton={{
-              label: "connect wallet",
-              style: {
-                padding: "8px 16px",
-                fontSize: "14px",
-                border: "1px solid hsl(217, 91%, 60%)",
-                color: "hsl(217, 91%, 60%)",
-                background: "transparent",
-                borderRadius: "0px",
-                fontFamily: "var(--font-mono), ui-monospace, monospace",
-              },
-            }}
-            detailsButton={{
-              style: {
-                padding: "6px 12px",
-                fontSize: "14px",
-                border: "1px solid hsl(217, 91%, 60%)",
-                color: "hsl(217, 91%, 60%)",
-                background: "transparent",
-                borderRadius: "0px",
-                fontFamily: "var(--font-mono), ui-monospace, monospace",
-              },
-            }}
-          />
+          <ConnectButton client={client} chain={sepolia} />
         </div>
       </div>
     </header>
