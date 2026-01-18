@@ -32,11 +32,6 @@ function initializeAppKit() {
       analytics: true,
     },
     themeMode: "dark",
-    themeVariables: {
-      "--w3m-font-family": "var(--font-mono), ui-monospace, monospace",
-      "--w3m-accent": "hsl(217, 91%, 60%)",
-      "--w3m-border-radius-master": "0px",
-    },
   });
 
   isAppKitInitialized = true;
